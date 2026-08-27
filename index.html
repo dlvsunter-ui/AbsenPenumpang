@@ -1,118 +1,303 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Absen Penumpang</title>
-  <style>
-    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #f4f7f6; margin: 0; padding: 15px; }
-    .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-    h2 { text-align: center; color: #2c3e50; margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-    .form-group { margin-bottom: 15px; }
-    label { font-weight: 600; font-size: 14px; color: #34495e; display: block; margin-bottom: 5px; }
-    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-    input:focus, select:focus, textarea:focus { border-color: #3498db; outline: none; }
-    button { width: 100%; padding: 12px; background-color: #2ecc71; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    button:hover { background-color: #27ae60; }
-    button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
-    .alert { padding: 10px; border-radius: 6px; font-size: 14px; margin-top: 15px; display: none; text-align: center; }
-    .alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .alert.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Absensi Bus Penumpang</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen pb-28 font-sans">
 
-  <div class="container">
-    <h2>Form Absensi Penumpang</h2>
-    <form id="absenForm">
-      <div class="form-group">
-        <label for="tanggal">Tanggal:</label>
-        <input type="date" id="tanggal" required />
+  <!-- Header -->
+  <div class="bg-blue-700 text-white p-4 shadow-md sticky top-0 z-50">
+    <div class="max-w-xl mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-lg font-bold">🚌 Absensi Penumpang Bus</h1>
+        <p class="text-xs text-blue-200">Sistem Realtime PIC</p>
       </div>
+      <a href="dashboard.html" class="bg-blue-800 hover:bg-blue-900 text-xs px-3 py-1.5 rounded-lg font-semibold border border-blue-400">📊 Dashboard</a>
+    </div>
+  </div>
 
-      <div class="form-group">
-        <label for="pic">Nama PIC Hub:</label>
-        <input type="text" id="pic" placeholder="Masukkan nama PIC" required />
+  <div class="max-w-xl mx-auto p-4 space-y-4">
+
+    <!-- REMINDER PIC -->
+    <div class="bg-amber-50 border-l-4 border-amber-500 p-3.5 rounded shadow-sm">
+      <div class="flex items-center space-x-2 text-amber-800 font-bold mb-1 text-sm">
+        <i data-lucide="bell" class="w-4 h-4"></i>
+        <span>Pengingat Wajib PIC Bus</span>
       </div>
+      <ul class="text-xs text-amber-900 space-y-1 list-disc list-inside">
+        <li><strong>Berdoa bersama</strong> sebelum perjalanan dimulai.</li>
+        <li><strong>Cek kondisi Driver & Asisten Driver</strong> (kesehatan & kesiapan).</li>
+        <li>Cek fasilitas bus (AC, Kebersihan, P3K, Seatbelt).</li>
+      </ul>
+    </div>
 
-      <div class="form-group">
-        <label for="rute">Rute Armada:</label>
-        <select id="rute" required>
-          <option value="">-- Pilih Rute --</option>
-          <option value="Sunter - Karawang">Sunter - Karawang</option>
-          <option value="Sunter - Cibitung">Sunter - Cibitung</option>
-          <option value="Sunter - Pegangsaan">Sunter - Pegangsaan</option>
+    <!-- PENGATURAN DROPDOWN -->
+    <div class="bg-white p-4 rounded-xl shadow-sm space-y-3 border border-gray-200">
+      <!-- Dropdown Lokasi (5 Pilihan) -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1">Lokasi Check-in:</label>
+        <select id="selectLokasi" onchange="toggleOtherLokasi()" class="w-full border-gray-300 border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500">
+          <option value="Berangkat ( TAM Sunter2)">Berangkat ( TAM Sunter2)</option>
+          <option value="Rest Area 1 (Berangkat)">Rest Area 1 (Berangkat)</option>
+          <option value="Pulang (Hotel)">Pulang (Hotel)</option>
+          <option value="Rest Area 2 (Pulang)">Rest Area 2 (Pulang)</option>
+          <option value="Other">Other (Manual Input)</option>
         </select>
       </div>
 
-      <div class="form-group">
-        <label for="jumlah">Jumlah Penumpang:</label>
-        <input type="number" id="jumlah" min="1" placeholder="0" required />
+      <div id="divOtherLokasi" class="hidden">
+        <input type="text" id="inputOtherLokasi" placeholder="Masukkan lokasi manual..." class="w-full border-gray-300 border rounded-lg p-2 text-sm">
       </div>
 
-      <div class="form-group">
-        <label for="catatan">Catatan / Keterangan:</label>
-        <textarea id="catatan" rows="3" placeholder="Contoh: Terlambat 10 menit, rute lancar..."></textarea>
+      <!-- Dropdown Nomor Bus -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1">Nomor Bus:</label>
+        <select id="selectBus" onchange="filterDataByBus()" class="w-full border-gray-300 border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500">
+          <option value="Bus 1">Bus 1</option>
+          <option value="Bus 2">Bus 2</option>
+          <option value="Bus 3">Bus 3</option>
+        </select>
       </div>
+    </div>
 
-      <button type="submit" id="btnSubmit">Kirim Ke Google Sheet</button>
-    </form>
+    <!-- SEARCH & COUNTER -->
+    <div class="flex items-center justify-between gap-2">
+      <input type="text" id="searchName" onkeyup="renderTable()" placeholder="🔍 Cari nama..." class="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm shadow-sm">
+      <div id="statCounter" class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-2.5 rounded-lg whitespace-nowrap">
+        0/0 Hadir
+      </div>
+    </div>
 
-    <div id="statusAlert" class="alert"></div>
+    <!-- TABEL LIST PENUMPANG -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-blue-50 text-blue-900 border-b border-gray-200">
+              <th class="p-3 w-5/12">Nama Penumpang (A-Z)</th>
+              <th class="p-3 w-5/12">Remark (Catatan)</th>
+              <th class="p-3 w-2/12 text-center">Hadir</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-gray-100">
+            <tr>
+              <td colspan="3" class="p-4 text-center text-gray-400">Memuat data dari Google Sheet...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <button onclick="addAdditionalPassenger()" class="w-full border-2 border-dashed border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold p-2.5 rounded-lg text-xs flex items-center justify-center gap-1">
+      <i data-lucide="user-plus" class="w-4 h-4"></i> + Tambah Penumpang Tambahan (Additional)
+    </button>
+
+  </div>
+
+  <!-- TOMBOL ACTION FIX DI BAWAH -->
+  <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg z-40">
+    <div class="max-w-xl mx-auto flex gap-2">
+      <button onclick="toggleAllCheckboxes(true)" class="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg text-xs font-semibold">
+        Ceklis Semua
+      </button>
+      <button onclick="submitAbsensi()" id="btnSubmit" class="w-2/3 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-sm font-bold shadow flex items-center justify-center gap-2">
+        <i data-lucide="send" class="w-4 h-4"></i> Kirim Ke Google Sheet
+      </button>
+    </div>
   </div>
 
   <script>
-    // Link Web App Google Apps Script Anda
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbze816p-ETbtUBvF1jiUpNGlVCbZkf5P-9p0IWn_uZILL6x1mam7C7_Ci0-uXG-U_qx/exec";
+    // Link Web App Google Apps Script Baru Anda
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9Ah_GvZu54vJyR0bwg-HVSOsj_n384t3LJx8rMqgFD-eMXqx0kVFkdYZHma79beKa/exec";
 
-    // Set tanggal default ke hari ini
-    document.getElementById('tanggal').valueAsDate = new Date();
+    let allMasterData = [];
+    let currentBusData = [];
+    let attendanceState = {}; // { id: true/false }
+    let remarkState = {};     // { id: "text" }
 
-    const form = document.getElementById('absenForm');
-    const btnSubmit = document.getElementById('btnSubmit');
-    const statusAlert = document.getElementById('statusAlert');
+    function init() {
+      lucide.createIcons();
+      fetchDatabase();
+    }
 
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
+    function fetchDatabase() {
+      fetch(GOOGLE_SCRIPT_URL)
+        .then(res => res.json())
+        .then(data => {
+          allMasterData = data;
+          filterDataByBus();
+        })
+        .catch(err => {
+          document.getElementById('tableBody').innerHTML = `<tr><td colspan="3" class="p-4 text-center text-red-500">Gagal memuat data dari Sheet. Pastikan koneksi aman.</td></tr>`;
+          console.error(err);
+        });
+    }
+
+    function toggleOtherLokasi() {
+      const val = document.getElementById('selectLokasi').value;
+      document.getElementById('divOtherLokasi').classList.toggle('hidden', val !== 'Other');
+    }
+
+    function filterDataByBus() {
+      const selectedBus = document.getElementById('selectBus').value;
       
-      btnSubmit.disabled = true;
-      btnSubmit.innerText = "Mengirim...";
-      statusAlert.style.display = 'none';
+      // Filter berdasarkan nomor bus & pastikan urut abjad nama
+      currentBusData = allMasterData
+        .filter(item => item.bus === selectedBus)
+        .map((item, index) => ({ ...item, id: 'p_' + index }));
 
-      const payload = {
-        tanggal: document.getElementById('tanggal').value,
-        pic: document.getElementById('pic').value,
-        rute: document.getElementById('rute').value,
-        jumlah: document.getElementById('jumlah').value,
-        catatan: document.getElementById('catatan').value
+      // Reset Checklist & Remark
+      attendanceState = {};
+      remarkState = {};
+      currentBusData.forEach(item => {
+        attendanceState[item.id] = true; // Default terceklis (Hadir)
+        remarkState[item.id] = "";
+      });
+
+      renderTable();
+    }
+
+    function onCheckChange(id, isChecked) {
+      attendanceState[id] = isChecked;
+      updateCounter();
+    }
+
+    function onRemarkChange(id, val) {
+      remarkState[id] = val;
+    }
+
+    function toggleAllCheckboxes(status) {
+      currentBusData.forEach(item => {
+        attendanceState[item.id] = status;
+      });
+      renderTable();
+    }
+
+    function addAdditionalPassenger() {
+      const busSelected = document.getElementById('selectBus').value;
+      const nama = prompt("Nama Penumpang Tambahan:");
+      if (!nama || !nama.trim()) return;
+
+      const newId = "add_" + Date.now();
+      const newPassenger = {
+        id: newId,
+        nama: nama.trim() + " (Add)",
+        divisi: "ADDITIONAL",
+        bus: busSelected
       };
 
-      fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      .then(() => {
-        statusAlert.className = "alert success";
-        statusAlert.innerText = "Data absensi berhasil dikirim!";
-        statusAlert.style.display = 'block';
-        form.reset();
-        document.getElementById('tanggal').valueAsDate = new Date();
-      })
-      .catch(error => {
-        statusAlert.className = "alert error";
-        statusAlert.innerText = "Gagal mengirim data. Silakan coba lagi.";
-        statusAlert.style.display = 'block';
-        console.error('Error:', error);
-      })
-      .finally(() => {
-        btnSubmit.disabled = false;
-        btnSubmit.innerText = "Kirim Ke Google Sheet";
-      });
-    });
-  </script>
+      currentBusData.push(newPassenger);
+      // Sort abjad lagi setelah nambah
+      currentBusData.sort((a, b) => a.nama.localeCompare(b.nama));
 
+      attendanceState[newId] = true;
+      remarkState[newId] = "Penumpang Tambahan";
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      const searchQuery = document.getElementById('searchName').value.toLowerCase();
+      tbody.innerHTML = '';
+
+      if (currentBusData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-400">Tidak ada data penumpang di bus ini.</td></tr>`;
+        updateCounter();
+        return;
+      }
+
+      currentBusData.forEach(item => {
+        const isChecked = attendanceState[item.id];
+        const remarkVal = remarkState[item.id] || "";
+
+        if (item.nama.toLowerCase().includes(searchQuery)) {
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
+          tr.innerHTML = `
+            <td class="p-3 align-middle">
+              <div class="font-bold text-gray-800">${item.nama}</div>
+              <div class="text-[10px] text-gray-400">${item.divisi}</div>
+            </td>
+            <td class="p-3 align-middle">
+              <input 
+                type="text" 
+                placeholder="Catatan..." 
+                value="${remarkVal}"
+                onchange="onRemarkChange('${item.id}', this.value)"
+                class="w-full bg-gray-50 border border-gray-200 rounded p-1.5 text-xs text-gray-700 focus:bg-white focus:ring-1 focus:ring-blue-500"
+              />
+            </td>
+            <td class="p-3 align-middle text-center">
+              <input 
+                type="checkbox" 
+                ${isChecked ? 'checked' : ''} 
+                onchange="onCheckChange('${item.id}', this.checked)"
+                class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+              />
+            </td>
+          `;
+          tbody.appendChild(tr);
+        }
+      });
+
+      updateCounter();
+      lucide.createIcons();
+    }
+
+    function updateCounter() {
+      const total = currentBusData.length;
+      const hadir = Object.values(attendanceState).filter(v => v === true).length;
+      document.getElementById('statCounter').innerText = `${hadir}/${total} Hadir`;
+    }
+
+    function submitAbsensi() {
+      let lokasi = document.getElementById('selectLokasi').value;
+      if (lokasi === 'Other') {
+        lokasi = document.getElementById('inputOtherLokasi').value.trim();
+        if (!lokasi) return alert('Harap isi lokasi manual!');
+      }
+
+      const busSelected = document.getElementById('selectBus').value;
+      const btnSubmit = document.getElementById('btnSubmit');
+
+      const payload = {
+        bus: busSelected,
+        lokasi: lokasi,
+        timestamp: new Date().toLocaleString('id-ID'),
+        data: currentBusData.map(item => ({
+          nama: item.nama,
+          divisi: item.divisi,
+          status: attendanceState[item.id] ? 'Hadir' : 'Tidak Hadir',
+          remark: remarkState[item.id] || ""
+        }))
+      };
+
+      if (confirm(`Kirim data absensi ${busSelected} di lokasi: "${lokasi}"?`)) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerText = "Mengirim...";
+
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(() => {
+          alert('Data Absensi Berhasil Terkirim ke Google Sheet!');
+        }).catch(err => {
+          alert('Gagal mengirim data. Cek koneksi internet.');
+          console.error(err);
+        }).finally(() => {
+          btnSubmit.disabled = false;
+          btnSubmit.innerText = "Kirim Ke Google Sheet";
+        });
+      }
+    }
+
+    window.onload = init;
+  </script>
 </body>
 </html>
