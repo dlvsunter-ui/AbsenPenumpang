@@ -111,8 +111,8 @@
   </div>
 
   <script>
-    // Link Web App Google Apps Script Terbaru
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz8iIM6KMiNSlcqXsw9j5h3VTmrkx1Y-u_2VwNyIVtlryyF8wCysxvTniNr3sETahik/exec";
+    // Link Apps Script Terbaru Anda
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwloj2Cs4Dglu-cSPaMgvX8ArQj3SvpPp8jJVMMVC_guwqQRTzkjrMe8-AWT5nkcKz/exec";
 
     let allMasterData = [];
     let currentBusData = [];
@@ -154,6 +154,7 @@
         })
         .map((item, index) => ({ ...item, id: 'p_' + index }));
 
+      // Urutkan Penumpang A-Z
       currentBusData.sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
 
       attendanceState = {};
