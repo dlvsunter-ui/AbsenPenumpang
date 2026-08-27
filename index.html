@@ -37,7 +37,7 @@
 
     <!-- PENGATURAN DROPDOWN -->
     <div class="bg-white p-4 rounded-xl shadow-sm space-y-3 border border-gray-200">
-      <!-- Dropdown Lokasi (5 Pilihan) -->
+      <!-- Dropdown Lokasi -->
       <div>
         <label class="block text-xs font-semibold text-gray-700 mb-1">Lokasi Check-in:</label>
         <select id="selectLokasi" onchange="toggleOtherLokasi()" class="w-full border-gray-300 border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500">
@@ -56,7 +56,7 @@
       <!-- Dropdown Nomor Bus -->
       <div>
         <label class="block text-xs font-semibold text-gray-700 mb-1">Nomor Bus:</label>
-        <select id="selectBus" onchange="filterDataByBus()" class="w-full border-gray-300 border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500">
+        <select id="selectBus" onchange="filterDataByBus()" class="w-full border-gray-300 border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 font-bold text-blue-900">
           <option value="Bus 1">Bus 1</option>
           <option value="Bus 2">Bus 2</option>
           <option value="Bus 3">Bus 3</option>
@@ -111,7 +111,6 @@
   </div>
 
   <script>
-    // Link Web App Google Apps Script Terbarunya
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqyKwADDnwW-KiIwKybr_t2BAWCQE7JxLGzVFguMfVJgJYQLTgSP7bPfHwzsyPw79Y/exec";
 
     let allMasterData = [];
@@ -142,17 +141,26 @@
       document.getElementById('divOtherLokasi').classList.toggle('hidden', val !== 'Other');
     }
 
+    // MEMPERBAIKI LOGIKA PENYARINGAN SESUAI PILIHAN BUS & HURUF BESAR/KECIL
     function filterDataByBus() {
-      const selectedBus = document.getElementById('selectBus').value;
+      const selectedBus = document.getElementById('selectBus').value.trim().toLowerCase();
       
+      // Filter data dari Sheet berdasarkan penulisan Bus
       currentBusData = allMasterData
-        .filter(item => item.bus === selectedBus)
+        .filter(item => {
+          const itemBus = String(item.bus || "").trim().toLowerCase();
+          return itemBus === selectedBus || itemBus === selectedBus.replace(/\s+/g, '');
+        })
         .map((item, index) => ({ ...item, id: 'p_' + index }));
 
+      // Urutkan Penumpang dari A - Z
+      currentBusData.sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+
+      // Reset state status hadir & remark untuk bus yang baru dipilih
       attendanceState = {};
       remarkState = {};
       currentBusData.forEach(item => {
-        attendanceState[item.id] = true;
+        attendanceState[item.id] = true; // Default Hadir (terceklis)
         remarkState[item.id] = "";
       });
 
@@ -189,7 +197,7 @@
       };
 
       currentBusData.push(newPassenger);
-      currentBusData.sort((a, b) => a.nama.localeCompare(b.nama));
+      currentBusData.sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
 
       attendanceState[newId] = true;
       remarkState[newId] = "Penumpang Tambahan";
@@ -202,7 +210,7 @@
       tbody.innerHTML = '';
 
       if (currentBusData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-400">Tidak ada data penumpang di bus ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 font-semibold">Tidak ada data penumpang untuk ${document.getElementById('selectBus').value}.<br><span class="text-xs font-normal">Pastikan penulisan Bus di Sheet tab Database_Penumpang sudah sesuai ("Bus 1", "Bus 2", "Bus 3").</span></td></tr>`;
         updateCounter();
         return;
       }
@@ -211,13 +219,13 @@
         const isChecked = attendanceState[item.id];
         const remarkVal = remarkState[item.id] || "";
 
-        if (item.nama.toLowerCase().includes(searchQuery)) {
+        if ((item.nama || "").toLowerCase().includes(searchQuery)) {
           const tr = document.createElement('tr');
           tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
           tr.innerHTML = `
             <td class="p-3 align-middle">
-              <div class="font-bold text-gray-800">${item.nama}</div>
-              <div class="text-[10px] text-gray-400">${item.divisi}</div>
+              <div class="font-bold text-gray-800">${item.nama || '-'}</div>
+              <div class="text-[10px] text-gray-400">${item.divisi || '-'}</div>
             </td>
             <td class="p-3 align-middle">
               <input 
