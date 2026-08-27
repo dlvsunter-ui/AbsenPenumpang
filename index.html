@@ -111,13 +111,13 @@
   </div>
 
   <script>
-    // Link Web App Google Apps Script Baru Anda
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9Ah_GvZu54vJyR0bwg-HVSOsj_n384t3LJx8rMqgFD-eMXqx0kVFkdYZHma79beKa/exec";
+    // Link Web App Google Apps Script Terbarunya
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqyKwADDnwW-KiIwKybr_t2BAWCQE7JxLGzVFguMfVJgJYQLTgSP7bPfHwzsyPw79Y/exec";
 
     let allMasterData = [];
     let currentBusData = [];
-    let attendanceState = {}; // { id: true/false }
-    let remarkState = {};     // { id: "text" }
+    let attendanceState = {}; 
+    let remarkState = {};     
 
     function init() {
       lucide.createIcons();
@@ -145,16 +145,14 @@
     function filterDataByBus() {
       const selectedBus = document.getElementById('selectBus').value;
       
-      // Filter berdasarkan nomor bus & pastikan urut abjad nama
       currentBusData = allMasterData
         .filter(item => item.bus === selectedBus)
         .map((item, index) => ({ ...item, id: 'p_' + index }));
 
-      // Reset Checklist & Remark
       attendanceState = {};
       remarkState = {};
       currentBusData.forEach(item => {
-        attendanceState[item.id] = true; // Default terceklis (Hadir)
+        attendanceState[item.id] = true;
         remarkState[item.id] = "";
       });
 
@@ -191,7 +189,6 @@
       };
 
       currentBusData.push(newPassenger);
-      // Sort abjad lagi setelah nambah
       currentBusData.sort((a, b) => a.nama.localeCompare(b.nama));
 
       attendanceState[newId] = true;
