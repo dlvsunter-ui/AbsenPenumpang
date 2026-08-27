@@ -6,43 +6,63 @@
   <title>Dashboard Monitoring Absensi Bus</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 font-sans">
+<body class="bg-gray-100 min-h-screen p-3 md:p-6 font-sans">
 
-  <div class="max-w-5xl mx-auto space-y-4">
+  <div class="max-w-7xl mx-auto space-y-4">
     
-    <!-- Header -->
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center">
+    <!-- Header & Filter -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
       <div>
-        <h1 class="text-xl font-bold text-gray-800">📊 Dashboard Monitoring Absensi</h1>
-        <p class="text-xs text-gray-500">Urutan: Data Terbaru & Nama (A-Z)</p>
+        <h1 class="text-lg md:text-xl font-bold text-gray-800">📊 Matriks Status & Remark Absensi</h1>
+        <p class="text-xs text-gray-500">Monitoring Kehadiran & Catatan Penumpang Per Lokasi</p>
       </div>
-      <div class="flex gap-2">
+
+      <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+        <!-- Filter Bus -->
+        <select id="filterBus" onchange="renderMatrixTable()" class="bg-gray-50 border border-gray-300 text-xs font-bold text-blue-900 rounded-lg p-2 focus:ring-2 focus:ring-blue-500">
+          <option value="ALL">Semua Bus</option>
+          <option value="Bus 1">Bus 1</option>
+          <option value="Bus 2">Bus 2</option>
+          <option value="Bus 3">Bus 3</option>
+        </select>
+
         <a href="index.html" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold px-3 py-2 rounded-lg border">
-          ← Kembali ke Form
+          ← Form
         </a>
         <button onclick="loadData()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow">
-          🔄 Refresh Data
+          🔄 Refresh
         </button>
       </div>
     </div>
 
-    <!-- Status Loading / Table -->
+    <!-- Status Loading / Table Matriks -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div id="loading" class="p-8 text-center text-gray-500 text-sm font-semibold">
-        ⏳ Memuat data absensi terbaru...
+        ⏳ Memuat data absensi dari Google Sheet...
       </div>
 
       <div class="overflow-x-auto">
         <table id="dataTable" class="w-full text-left border-collapse text-xs hidden">
           <thead>
-            <tr class="bg-blue-900 text-white">
-              <th class="p-3">Waktu Input</th>
-              <th class="p-3">Bus</th>
-              <th class="p-3">Lokasi Check-in</th>
-              <th class="p-3">Nama Penumpang (A-Z)</th>
-              <th class="p-3">Divisi</th>
-              <th class="p-3 text-center">Status</th>
-              <th class="p-3">Remark</th>
+            <tr class="bg-blue-900 text-white font-semibold">
+              <th class="p-2.5 border-b border-blue-800 min-w-[140px]">Nama Penumpang</th>
+              <th class="p-2.5 border-b border-blue-800 min-w-[70px]">Bus</th>
+              
+              <!-- Kolom Singkatan Lokasi -->
+              <th class="p-2.5 border-b border-blue-800 text-center min-w-[110px]" title="Berangkat (TAM Sunter 2)">
+                BRKT <br/><span class="text-[9px] text-blue-200 font-normal">(TAM Sntr 2)</span>
+              </th>
+              <th class="p-2.5 border-b border-blue-800 text-center min-w-[110px]" title="Rest Area 1 (Berangkat)">
+                RA 1 <br/><span class="text-[9px] text-blue-200 font-normal">(Berangkat)</span>
+              </th>
+              <th class="p-2.5 border-b border-blue-800 text-center min-w-[110px]" title="Pulang (Hotel)">
+                PLG <br/><span class="text-[9px] text-blue-200 font-normal">(Hotel)</span>
+              </th>
+              <th class="p-2.5 border-b border-blue-800 text-center min-w-[110px]" title="Rest Area 2 (Pulang)">
+                RA 2 <br/><span class="text-[9px] text-blue-200 font-normal">(Pulang)</span>
+              </th>
+
+              <th class="p-2.5 border-b border-blue-800 min-w-[180px]">Catatan / Remark Ditulis</th>
             </tr>
           </thead>
           <tbody id="tableBody" class="divide-y divide-gray-100 text-gray-700"></tbody>
@@ -53,69 +73,133 @@
   </div>
 
   <script>
-    // Link Apps Script Terbaru Anda (+ parameter ?action=dashboard)
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwloj2Cs4Dglu-cSPaMgvX8ArQj3SvpPp8jJVMMVC_guwqQRTzkjrMe8-AWT5nkcKz/exec?action=dashboard";
+
+    let rawLogData = [];
+
+    // Fungsi Pengelompokan Lokasi ke Singkatan
+    function getLokasiKey(lokasiRaw) {
+      if (!lokasiRaw) return 'OTHER';
+      const loc = lokasiRaw.toLowerCase();
+      if (loc.includes('sunter') || loc.includes('berangkat ( tam')) return 'BRKT';
+      if (loc.includes('rest area 1') || loc.includes('ra 1')) return 'RA1';
+      if (loc.includes('hotel') || loc.includes('pulang (hotel)')) return 'PLG';
+      if (loc.includes('rest area 2') || loc.includes('ra 2')) return 'RA2';
+      return 'OTHER';
+    }
 
     function loadData() {
       const loading = document.getElementById('loading');
       const table = document.getElementById('dataTable');
-      const tableBody = document.getElementById('tableBody');
 
       loading.classList.remove('hidden');
       table.classList.add('hidden');
-      tableBody.innerHTML = '';
 
       fetch(GOOGLE_SCRIPT_URL)
         .then(res => res.json())
         .then(data => {
+          rawLogData = data || [];
           loading.classList.add('hidden');
           table.classList.remove('hidden');
-
-          if (Array.isArray(data) && data.length > 0) {
-            
-            // SORTING: 1. Waktu Input Terbaru | 2. Nama A-Z
-            data.sort((a, b) => {
-              const timeA = new Date(a.timestamp || 0).getTime();
-              const timeB = new Date(b.timestamp || 0).getTime();
-
-              if (timeB !== timeA) {
-                return timeB - timeA;
-              }
-              
-              const nameA = (a.nama || "").toLowerCase();
-              const nameB = (b.nama || "").toLowerCase();
-              return nameA.localeCompare(nameB);
-            });
-
-            data.forEach(row => {
-              const tr = document.createElement('tr');
-              tr.className = "hover:bg-gray-50";
-
-              const isHadir = row.status === 'Hadir';
-              const statusBadge = isHadir 
-                ? `<span class="bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded text-[10px]">Hadir</span>`
-                : `<span class="bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded text-[10px]">Tidak Hadir</span>`;
-
-              tr.innerHTML = `
-                <td class="p-3 whitespace-nowrap text-gray-500 font-mono">${row.timestamp || '-'}</td>
-                <td class="p-3 font-semibold whitespace-nowrap">${row.bus || '-'}</td>
-                <td class="p-3 text-blue-700 font-medium whitespace-nowrap">${row.lokasi || '-'}</td>
-                <td class="p-3 font-bold text-gray-800 whitespace-nowrap">${row.nama || '-'}</td>
-                <td class="p-3 text-gray-500 whitespace-nowrap">${row.divisi || '-'}</td>
-                <td class="p-3 text-center whitespace-nowrap">${statusBadge}</td>
-                <td class="p-3 text-gray-600">${row.remark || '-'}</td>
-              `;
-              tableBody.appendChild(tr);
-            });
-
-          } else {
-            tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">Belum ada data absensi yang masuk.</td></tr>`;
-          }
+          renderMatrixTable();
         })
         .catch(err => {
-          loading.innerHTML = `<span class="text-red-500 font-bold">Gagal mengambil data. Pastikan koneksi internet stabil.</span>`;
+          loading.innerHTML = `<span class="text-red-500 font-bold">Gagal mengambil data. Cek koneksi internet.</span>`;
           console.error(err);
         });
+    }
+
+    function renderMatrixTable() {
+      const tableBody = document.getElementById('tableBody');
+      const selectedBus = document.getElementById('filterBus').value;
+      tableBody.innerHTML = '';
+
+      if (rawLogData.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">Belum ada data absensi.</td></tr>`;
+        return;
+      }
+
+      // 1. Group Data per Penumpang
+      const passengerMap = {};
+
+      rawLogData.forEach(item => {
+        const nama = (item.nama || "").trim();
+        if (!nama) return;
+
+        const bus = (item.bus || "-").trim();
+
+        // Filter bus
+        if (selectedBus !== 'ALL' && !bus.toLowerCase().includes(selectedBus.toLowerCase())) {
+          return;
+        }
+
+        if (!passengerMap[nama]) {
+          passengerMap[nama] = {
+            nama: nama,
+            bus: bus,
+            divisi: item.divisi || "",
+            statusLoc: { BRKT: null, RA1: null, PLG: null, RA2: null, OTHER: null },
+            remarks: []
+          };
+        }
+
+        const locKey = getLokasiKey(item.lokasi);
+        
+        // Simpan status di lokasi tersebut
+        passengerMap[nama].statusLoc[locKey] = item.status;
+
+        // Kumpulkan catatan/remark jika ada yang diisi
+        if (item.remark && item.remark.trim() !== "" && item.remark !== "-") {
+          const locNameShort = locKey === 'BRKT' ? 'BRKT' : locKey === 'RA1' ? 'RA1' : locKey === 'PLG' ? 'PLG' : locKey === 'RA2' ? 'RA2' : item.lokasi;
+          passengerMap[nama].remarks.push(`<strong>[${locNameShort}]</strong> ${item.remark.trim()}`);
+        }
+      });
+
+      // 2. Convert map ke Array & Urutkan Nama A-Z
+      const listPassengers = Object.values(passengerMap);
+      listPassengers.sort((a, b) => a.nama.localeCompare(b.nama));
+
+      if (listPassengers.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">Tidak ada data untuk ${selectedBus}.</td></tr>`;
+        return;
+      }
+
+      // 3. Render Baris Tabel
+      listPassengers.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-gray-50 border-b border-gray-100 transition";
+
+        // Helper Cell Status
+        const renderBadge = (status) => {
+          if (status === 'Hadir') {
+            return `<span class="bg-green-100 text-green-800 font-bold px-1.5 py-0.5 rounded text-[10px]">✓ Hadir</span>`;
+          } else if (status === 'Tidak Hadir') {
+            return `<span class="bg-red-100 text-red-800 font-bold px-1.5 py-0.5 rounded text-[10px]">✕ Absen</span>`;
+          }
+          return `<span class="text-gray-300 text-[10px]">-</span>`;
+        };
+
+        const remarkContent = p.remarks.length > 0 
+          ? p.remarks.join('<br/>') 
+          : `<span class="text-gray-300 italic text-[10px]">-</span>`;
+
+        tr.innerHTML = `
+          <td class="p-2.5 align-middle">
+            <div class="font-bold text-gray-800">${p.nama}</div>
+            <div class="text-[10px] text-gray-400">${p.divisi || '-'}</div>
+          </td>
+          <td class="p-2.5 align-middle font-semibold whitespace-nowrap text-blue-900">${p.bus}</td>
+          
+          <td class="p-2.5 align-middle text-center whitespace-nowrap">${renderBadge(p.statusLoc.BRKT)}</td>
+          <td class="p-2.5 align-middle text-center whitespace-nowrap">${renderBadge(p.statusLoc.RA1)}</td>
+          <td class="p-2.5 align-middle text-center whitespace-nowrap">${renderBadge(p.statusLoc.PLG)}</td>
+          <td class="p-2.5 align-middle text-center whitespace-nowrap">${renderBadge(p.statusLoc.RA2)}</td>
+
+          <td class="p-2.5 align-middle text-gray-700 text-[11px]">${remarkContent}</td>
+        `;
+
+        tableBody.appendChild(tr);
+      });
     }
 
     window.onload = loadData;
