@@ -53,8 +53,8 @@
   </div>
 
   <script>
-    // Link Web App Google Apps Script Terbaru
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz8iIM6KMiNSlcqXsw9j5h3VTmrkx1Y-u_2VwNyIVtlryyF8wCysxvTniNr3sETahik/exec";
+    // Link Apps Script Terbaru Anda (+ parameter ?action=dashboard)
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwloj2Cs4Dglu-cSPaMgvX8ArQj3SvpPp8jJVMMVC_guwqQRTzkjrMe8-AWT5nkcKz/exec?action=dashboard";
 
     function loadData() {
       const loading = document.getElementById('loading');
@@ -73,6 +73,7 @@
 
           if (Array.isArray(data) && data.length > 0) {
             
+            // SORTING: 1. Waktu Input Terbaru | 2. Nama A-Z
             data.sort((a, b) => {
               const timeA = new Date(a.timestamp || 0).getTime();
               const timeB = new Date(b.timestamp || 0).getTime();
