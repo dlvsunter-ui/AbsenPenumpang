@@ -8,13 +8,13 @@
 </head>
 <body class="bg-gray-100 min-h-screen p-4 font-sans">
 
-  <div class="max-w-4xl mx-auto space-y-4">
+  <div class="max-w-5xl mx-auto space-y-4">
     
     <!-- Header -->
     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center">
       <div>
         <h1 class="text-xl font-bold text-gray-800">📊 Dashboard Monitoring Absensi</h1>
-        <p class="text-xs text-gray-500">Rekap Realtime dari Google Sheet</p>
+        <p class="text-xs text-gray-500">Urutan: Data Terbaru & Nama (A-Z)</p>
       </div>
       <div class="flex gap-2">
         <a href="index.html" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold px-3 py-2 rounded-lg border">
@@ -39,7 +39,7 @@
               <th class="p-3">Waktu Input</th>
               <th class="p-3">Bus</th>
               <th class="p-3">Lokasi Check-in</th>
-              <th class="p-3">Nama Penumpang</th>
+              <th class="p-3">Nama Penumpang (A-Z)</th>
               <th class="p-3">Divisi</th>
               <th class="p-3 text-center">Status</th>
               <th class="p-3">Remark</th>
@@ -53,8 +53,8 @@
   </div>
 
   <script>
-    // Link Web App Google Apps Script Baru Anda
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9Ah_GvZu54vJyR0bwg-HVSOsj_n384t3LJx8rMqgFD-eMXqx0kVFkdYZHma79beKa/exec";
+    // Link Web App Google Apps Script Terbarunya
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqyKwADDnwW-KiIwKybr_t2BAWCQE7JxLGzVFguMfVJgJYQLTgSP7bPfHwzsyPw79Y/exec";
 
     function loadData() {
       const loading = document.getElementById('loading');
@@ -72,7 +72,21 @@
           table.classList.remove('hidden');
 
           if (Array.isArray(data) && data.length > 0) {
-            data.reverse().forEach(row => {
+            
+            data.sort((a, b) => {
+              const timeA = new Date(a.timestamp || 0).getTime();
+              const timeB = new Date(b.timestamp || 0).getTime();
+
+              if (timeB !== timeA) {
+                return timeB - timeA;
+              }
+              
+              const nameA = (a.nama || "").toLowerCase();
+              const nameB = (b.nama || "").toLowerCase();
+              return nameA.localeCompare(nameB);
+            });
+
+            data.forEach(row => {
               const tr = document.createElement('tr');
               tr.className = "hover:bg-gray-50";
 
@@ -82,7 +96,7 @@
                 : `<span class="bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded text-[10px]">Tidak Hadir</span>`;
 
               tr.innerHTML = `
-                <td class="p-3 whitespace-nowrap text-gray-500">${row.timestamp || '-'}</td>
+                <td class="p-3 whitespace-nowrap text-gray-500 font-mono">${row.timestamp || '-'}</td>
                 <td class="p-3 font-semibold whitespace-nowrap">${row.bus || '-'}</td>
                 <td class="p-3 text-blue-700 font-medium whitespace-nowrap">${row.lokasi || '-'}</td>
                 <td class="p-3 font-bold text-gray-800 whitespace-nowrap">${row.nama || '-'}</td>
@@ -92,12 +106,13 @@
               `;
               tableBody.appendChild(tr);
             });
+
           } else {
             tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">Belum ada data absensi yang masuk.</td></tr>`;
           }
         })
         .catch(err => {
-          loading.innerHTML = `<span class="text-red-500 font-bold">Gagal mengambil data. Pastikan Web App Apps Script sudah di-deploy dengan akses "Anyone".</span>`;
+          loading.innerHTML = `<span class="text-red-500 font-bold">Gagal mengambil data. Pastikan koneksi internet stabil.</span>`;
           console.error(err);
         });
     }
