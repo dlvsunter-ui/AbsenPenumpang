@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Monitoring Absensi Bus</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 font-sans">
+
+  <div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- HEADER -->
+    <div class="flex justify-between items-center border-b border-slate-700 pb-4">
+      <div>
+        <h1 class="text-xl font-bold text-white flex items-center gap-2">
+          <i data-lucide="layout-dashboard" class="text-blue-400"></i> Monitoring Realtime Bus
+        </h1>
+        <p class="text-xs text-slate-400">Status Kelengkapan & Catatan Khusus Seluruh Penumpang</p>
+      </div>
+      <button onclick="loadDashboardData()" class="bg-blue-600 hover:bg-blue-500 text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Data
+      </button>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="busSummaryCards">
+      <!-- Card Bus 1, 2, 3 di-render via JS -->
+    </div>
+
+    <!-- TABEL LOG REKAP CATATAN KHUSUS / ISSUE -->
+    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl space-y-3">
+      <h2 class="font-bold text-sm text-amber-400 flex items-center gap-1.5">
+        <i data-lucide="alert-circle" class="w-4 h-4"></i> Daftar Penumpang bermasalah / Case Khusus (Tidak Hadir & Remarks)
+      </h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-700/50 uppercase text-slate-400">
+            <tr>
+              <th class="p-2.5">Waktu</th>
+              <th class="p-2.5">Bus</th>
+              <th class="p-2.5">Lokasi</th>
+              <th class="p-2.5">Nama</th>
+              <th class="p-2.5">Status</th>
+              <th class="p-2.5">Remark / Catatan</th>
+            </tr>
+          </thead>
+          <tbody id="tableSpecialCases" class="divide-y divide-slate-700">
+            <tr><td colspan="6" class="p-4 text-center text-slate-500">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
+
+    function loadDashboardData() {
+      lucide.createIcons();
+      fetch(GOOGLE_SCRIPT_URL)
+        .then(res => res.json())
+        .then(data => {
+          renderCards(data);
+          renderTable(data);
+        })
+        .catch(err => console.error("Gagal muat data:", err));
+    }
+
+    function renderCards(data) {
+      const buses = ["Bus 1", "Bus 2", "Bus 3"];
+      const cardsContainer = document.getElementById('busSummaryCards');
+      cardsContainer.innerHTML = '';
+
+      buses.forEach(busName => {
+        // Ambil data kiriman terakhir per bus
+        const busData = data.filter(d => d.Bus === busName);
+        const lastLokasi = busData.length > 0 ? busData[busData.length - 1]["Lokasi Check-in"] : "Belum Ada Absen";
+        const lastTimestamp = busData.length > 0 ? busData[busData.length - 1]["Timestamp"] : "-";
+        
+        // Ambil sesi absensi terakhir saja untuk statistik
+        const lastSessionData = busData.filter(d => d["Lokasi Check-in"] === lastLokasi && d["Timestamp"] === lastTimestamp);
+        
+        const total = lastSessionData.length;
+        const hadir = lastSessionData.filter(d => d.Status === "Hadir").length;
+        const tidakHadir = lastSessionData.filter(d => d.Status === "Tidak Hadir").length;
+
+        const isComplete = total > 0 && tidakHadir === 0;
+
+        cardsContainer.innerHTML += `
+          <div class="bg-slate-800 p-4 rounded-xl border ${isComplete ? 'border-green-500/40' : 'border-amber-500/40'} space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-lg text-white">${busName}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isComplete ? 'bg-green-500/20 text-green-300' : 'bg-amber-500/20 text-amber-300'}">
+                ${isComplete ? '✓ LENGKAP' : '⚠ CEK PENUMPANG'}
+              </span>
+            </div>
+            <div class="text-xs text-slate-400 space-y-1">
+              <p>📍 Lokasi: <strong class="text-slate-200">${lastLokasi}</strong></p>
+              <p>🕒 Update: <span class="text-slate-400">${lastTimestamp}</span></p>
+            </div>
+            <div class="flex justify-between text-xs pt-2 border-t border-slate-700">
+              <span class="text-green-400 font-semibold">Hadir: ${hadir}</span>
+              <span class="text-red-400 font-semibold">Absen: ${tidakHadir}</span>
+              <span class="text-slate-300">Total: ${total}</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('tableSpecialCases');
+      tbody.innerHTML = '';
+
+      // Filter hanya data yang Tidak Hadir ATAU Memiliki Remark Khusus
+      const specialCases = data.filter(d => d.Status === "Tidak Hadir" || (d.Remark && d.Remark.trim() !== ""));
+
+      if (specialCases.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Semua aman, tidak ada catatan khusus atau kelalaian.</td></tr>`;
+        return;
+      }
+
+      specialCases.reverse().forEach(row => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-700/30">
+            <td class="p-2.5 text-slate-400">${row.Timestamp}</td>
+            <td class="p-2.5 font-bold">${row.Bus}</td>
+            <td class="p-2.5 text-slate-300">${row["Lokasi Check-in"]}</td>
+            <td class="p-2.5 font-semibold text-white">${row["Nama Penumpang"]}</td>
+            <td class="p-2.5">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${row.Status === 'Hadir' ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'}">
+                ${row.Status}
+              </span>
+            </td>
+            <td class="p-2.5 text-amber-300 font-medium">${row.Remark || '-'}</td>
+          </tr>
+        `;
+      });
+    }
+
+    window.onload = loadDashboardData;
+  </script>
+</body>
+</html>
