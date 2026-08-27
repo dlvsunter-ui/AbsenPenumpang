@@ -111,7 +111,8 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqyKwADDnwW-KiIwKybr_t2BAWCQE7JxLGzVFguMfVJgJYQLTgSP7bPfHwzsyPw79Y/exec";
+    // Link Web App Google Apps Script Terbaru
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz8iIM6KMiNSlcqXsw9j5h3VTmrkx1Y-u_2VwNyIVtlryyF8wCysxvTniNr3sETahik/exec";
 
     let allMasterData = [];
     let currentBusData = [];
@@ -141,26 +142,24 @@
       document.getElementById('divOtherLokasi').classList.toggle('hidden', val !== 'Other');
     }
 
-    // MEMPERBAIKI LOGIKA PENYARINGAN SESUAI PILIHAN BUS & HURUF BESAR/KECIL
     function filterDataByBus() {
-      const selectedBus = document.getElementById('selectBus').value.trim().toLowerCase();
-      
-      // Filter data dari Sheet berdasarkan penulisan Bus
+      const selectedBus = document.getElementById('selectBus').value;
+      const selectedNum = selectedBus.replace(/\D/g, ''); 
+
       currentBusData = allMasterData
         .filter(item => {
-          const itemBus = String(item.bus || "").trim().toLowerCase();
-          return itemBus === selectedBus || itemBus === selectedBus.replace(/\s+/g, '');
+          const itemBus = String(item.bus || "").toLowerCase().trim();
+          const itemNum = itemBus.replace(/\D/g, '');
+          return itemBus.includes(selectedBus.toLowerCase()) || (selectedNum && itemNum === selectedNum);
         })
         .map((item, index) => ({ ...item, id: 'p_' + index }));
 
-      // Urutkan Penumpang dari A - Z
       currentBusData.sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
 
-      // Reset state status hadir & remark untuk bus yang baru dipilih
       attendanceState = {};
       remarkState = {};
       currentBusData.forEach(item => {
-        attendanceState[item.id] = true; // Default Hadir (terceklis)
+        attendanceState[item.id] = true;
         remarkState[item.id] = "";
       });
 
@@ -210,7 +209,7 @@
       tbody.innerHTML = '';
 
       if (currentBusData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 font-semibold">Tidak ada data penumpang untuk ${document.getElementById('selectBus').value}.<br><span class="text-xs font-normal">Pastikan penulisan Bus di Sheet tab Database_Penumpang sudah sesuai ("Bus 1", "Bus 2", "Bus 3").</span></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 font-semibold">Tidak ada data penumpang untuk ${document.getElementById('selectBus').value}.</td></tr>`;
         updateCounter();
         return;
       }
